@@ -19,11 +19,13 @@ permissions:
 
 jobs:
   dispatch:
-    if: "github.event.action != 'labeled' || github.event.label.name == 'Trigger: getsentry tests'"
+    if: "${{ github.event.action != 'labeled' || github.event.label.name == 'Trigger: getsentry tests'}}"
     name: getsentry dispatch
     runs-on: ubuntu-22.04
+    timeout-minutes: 1
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout permissions
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
         with:
           persist-credentials: false
 
@@ -42,21 +44,21 @@ jobs:
           ARG_LABEL_NAMES: ${{ toJSON(github.event.pull_request.labels.*.name) }}
 
       - name: Check for file changes
-        uses: dorny/paths-filter@0bc4621a3135347011ad047f9ecf449bf72ce2bd # v3.0.0
+        uses: dorny/paths-filter@0bc4621a3135347011ad047f9ecf449bf72ce2bd  # v3.0.0
         id: changes
         with:
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
       - name: getsentry token
-        uses: getsentry/action-github-app-token@d4b5da6c5e37703f8c3b3e43abb5705b46e159cc # v3.0.0
+        uses: getsentry/action-github-app-token@d4b5da6c5e37703f8c3b3e43abb5705b46e159cc  # v3.0.0
         id: getsentry
         with:
           app_id: ${{ vars.SENTRY_INTERNAL_APP_ID }}
           private_key: ${{ secrets.SENTRY_INTERNAL_APP_PRIVATE_KEY }}
 
       - name: Wait for PR merge commit
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         id: mergecommit
         with:
           github-token: ${{ steps.getsentry.outputs.token }}
@@ -68,7 +70,7 @@ jobs:
             });
 
       - name: Dispatch getsentry tests
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
           github-token: ${{ steps.getsentry.outputs.token }}
           script: |

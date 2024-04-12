@@ -17,11 +17,13 @@ on:
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
       security-events: write
+    if: github.repository == 'getsentry/sentry'
 
     strategy:
       fail-fast: false
@@ -32,11 +34,11 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@0116bc2df50751f9724a2e35ef1f24d22f90e4e1 # v2.22.3
+        uses: github/codeql-action/init@0116bc2df50751f9724a2e35ef1f24d22f90e4e1  # v2.22.3
         with:
           trap-caching: false
           config-file: ./.github/codeql/codeql-config.yml
@@ -58,11 +60,11 @@ jobs:
       #    and modify them (or add more) to build your code if your project
       #    uses a compiled language
 
-      #- run: |
+      # - run: |
       #   make bootstrap
       #   make release
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@0116bc2df50751f9724a2e35ef1f24d22f90e4e1 # v2.22.3
+        uses: github/codeql-action/analyze@0116bc2df50751f9724a2e35ef1f24d22f90e4e1  # v2.22.3
         with:
           category: '/language:${{matrix.language}}'

@@ -28,9 +28,11 @@ jobs:
       # XXX: `MATRIX_INSTANCE_TOTAL` must be hardcoded to the length of `strategy.matrix.instance`.
       # If this increases, make sure to also increase `flags.backend.after_n_builds` in `codecov.yml`.
       MATRIX_INSTANCE_TOTAL: 7
+    permissions: {}
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
         with:
           # Avoid codecov error message related to SHA resolution:
           # https://github.com/codecov/codecov-bash/blob/7100762afbc822b91806a6574658129fe0d23a7d/codecov#L891
@@ -64,8 +66,8 @@ jobs:
       # Upload coverage data even if running the tests step fails since
       # it reduces large coverage fluctuations
       - name: Upload coverage - special case to test Codecov ATS
-        if: ${{ always() }}
-        uses: codecov/codecov-action@v4-beta
+        if: ${{ always() && github.repository == 'getsentry/sentry' }}
+        uses: codecov/codecov-action@8450866  # v4.3.0
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:

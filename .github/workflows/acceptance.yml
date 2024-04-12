@@ -29,11 +29,14 @@ jobs:
     outputs:
       acceptance: ${{ steps.changes.outputs.acceptance }}
       backend_all: ${{ steps.changes.outputs.backend_all }}
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
 
       - name: Check for backend file changes
-        uses: dorny/paths-filter@0bc4621a3135347011ad047f9ecf449bf72ce2bd # v3.0.0
+        uses: dorny/paths-filter@0bc4621a3135347011ad047f9ecf449bf72ce2bd  # v3.0.0
         id: changes
         with:
           token: ${{ github.token }}
@@ -45,6 +48,8 @@ jobs:
     name: acceptance
     runs-on: ubuntu-22.04
     timeout-minutes: 30
+    permissions:
+      actions: write
     strategy:
       # This helps not having to run multiple jobs because one fails, thus, reducing resource usage
       # and reducing the risk that one of many runs would turn red again (read: intermittent tests)
@@ -57,27 +62,28 @@ jobs:
       # XXX: MATRIX_INSTANCE_TOTAL must be hardcoded to the length of strategy.matrix.instance.
       MATRIX_INSTANCE_TOTAL: 5
       TEST_GROUP_STRATEGY: roundrobin
+      WEBPACK_CACHE_PATH: .webpack_cache
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
         name: Checkout sentry
 
-      - uses: getsentry/action-setup-volta@e4939d337b83760d13a9d7030a6f68c9d0ee7581 # v2.0.0
+      - name: Setup volta
+        uses: getsentry/action-setup-volta@e4939d337b83760d13a9d7030a6f68c9d0ee7581  # v2.0.0
 
       - name: Step configurations
         id: config
         run: |
           echo "webpack-path=.webpack_cache" >> "$GITHUB_OUTPUT"
-          echo "WEBPACK_CACHE_PATH=.webpack_cache" >> "$GITHUB_ENV"
 
       - name: webpack cache
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2  # v4.0.0
         with:
           path: ${{ steps.config.outputs.webpack-path }}
           key: ${{ runner.os }}-v2-webpack-cache-${{ hashFiles('webpack.config.ts') }}
 
       - name: node_modules cache
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2  # v4.0.0
         id: nodemodulescache
         with:
           path: node_modules
@@ -131,4 +137,7 @@ jobs:
       - name: Check for failures
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: |
-          echo "One of the dependent jobs have failed. You may need to re-run it." && exit 1
+          echo "One of the dependent jobs have failed. You may need to re-run it."
+      - name: Fail the pipeline
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

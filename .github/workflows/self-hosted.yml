@@ -19,14 +19,21 @@ env:
 
 jobs:
   self-hosted:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      WEBPACK_CACHE_PATH: .webpack_cache
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
 
-      - uses: getsentry/action-setup-volta@e4939d337b83760d13a9d7030a6f68c9d0ee7581 # v2.0.0
+      - name: Setup volta
+        uses: getsentry/action-setup-volta@e4939d337b83760d13a9d7030a6f68c9d0ee7581  # v2.0.0
 
-      - uses: getsentry/action-setup-venv@f0daafa9688e48f939cace0378a46f2d422bd81f # v2.0.0
+      - name: Setup venv
+        uses: getsentry/action-setup-venv@f0daafa9688e48f939cace0378a46f2d422bd81f  # v2.0.0
         with:
           python-version: 3.11.6
           cache-dependency-path: requirements-dev-frozen.txt
@@ -36,16 +43,15 @@ jobs:
         id: config
         run: |
           echo "webpack-path=.webpack_cache" >> "$GITHUB_OUTPUT"
-          echo "WEBPACK_CACHE_PATH=.webpack_cache" >> "$GITHUB_ENV"
 
       - name: webpack cache
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2  # v4.0.0
         with:
           path: ${{ steps.config.outputs.webpack-path }}
           key: ${{ runner.os }}-self-hosted-webpack-cache-${{ hashFiles('webpack.config.ts') }}
 
       - name: node_modules cache
-        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2  # v4.0.0
         id: nodemodulescache
         with:
           path: node_modules
@@ -55,33 +61,33 @@ jobs:
         if: steps.nodemodulescache.outputs.cache-hit != 'true'
         run: yarn install --frozen-lockfile --production
 
-      - run: |
+      - name: Run setup.py
+        run: |
           SETUPTOOLS_USE_DISTUTILS=stdlib python setup.py bdist_wheel --build-number 0
-          cp requirements-frozen.txt dist/
+      - name: Copy requirements to correct place
+        run: cp requirements-frozen.txt dist/
 
-      - run: docker login --username '${{ github.actor }}' --password-stdin ghcr.io <<< "$GHCR_TOKEN"
+      - name: Login to ghcr
+        run: docker login --username '${{ github.actor }}' --password-stdin ghcr.io <<< "$GHCR_TOKEN"
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: github.event_name != 'pull_request'
 
-      - run: docker buildx create --driver docker-container --use
+      - name: Create docker
+        run: docker buildx create --driver docker-container --use
+      - name: set args if push event
+        if: github.event_name == 'push'
+        run: echo "args=(--tag ghcr.io/getsentry/sentry-self-hosted:latest --push)" >> $GITHUB_ENV
+      - name: set args if not push event
+        run: echo "args=''">> $GITHUB_EVN
 
-      - run: |
-          if [ ${{ github.event_name }} = 'push' ]; then
-            args=(
-              --tag ghcr.io/getsentry/sentry-self-hosted:latest
-              --push
-            )
-          else
-            args=()
-          fi
-
-          docker buildx build \
+      - name: Build docker image
+        run: docker buildx build \
             --pull \
             --cache-from ghcr.io/getsentry/sentry-self-hosted:latest \
             --cache-to type=inline \
             --tag ghcr.io/getsentry/sentry-self-hosted:${{ github.sha }} \
             --file self-hosted/Dockerfile \
             --build-arg SOURCE_COMMIt=${{ github.sha }} \
-            "${args[@]}" \
+            "${{env.args}}" \
             .

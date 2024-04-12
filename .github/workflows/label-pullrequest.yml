@@ -10,14 +10,17 @@ jobs:
       contents: read
       pull-requests: write
     name: labels pull requests (frontend / backend)
+    if: github.repository == 'getsentry/sentry'
+    timeout-minutes: 1
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Checkout repository
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11  # v4.1.1
         with:
           persist-credentials: false
 
       - name: Check for file changes
-        uses: dorny/paths-filter@0bc4621a3135347011ad047f9ecf449bf72ce2bd # v3.0.0
+        uses: dorny/paths-filter@0bc4621a3135347011ad047f9ecf449bf72ce2bd  # v3.0.0
         id: changes
         with:
           token: ${{ github.token }}
@@ -36,7 +39,7 @@ jobs:
           labels: 'Scope: Backend'
 
       - name: Find previous frontend/backend warning comment
-        uses: peter-evans/find-comment@a54c31d7fa095754bfef525c0c8e5e5674c4b4b1 # v2.4.0
+        uses: peter-evans/find-comment@a54c31d7fa095754bfef525c0c8e5e5674c4b4b1  # v2.4.0
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}

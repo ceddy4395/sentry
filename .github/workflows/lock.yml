@@ -5,9 +5,15 @@ on:
   workflow_dispatch:
 jobs:
   lock:
-    runs-on: ubuntu-latest
+    if: github.repository == 'getsentry/sentry'
+    timeout-minutes: 1
+    permissions:
+      pull-requests: write
+      issues: write
+    runs-on: ubuntu-22.04
     steps:
-      - uses: dessant/lock-threads@be8aa5be94131386884a6da4189effda9b14aa21 # v4.0.1
+      - name: Lock closes issues and PRs
+        uses: dessant/lock-threads@be8aa5be94131386884a6da4189effda9b14aa21  # v4.0.1
         with:
           github-token: ${{ github.token }}
           issue-inactive-days: 15
